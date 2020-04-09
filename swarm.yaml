@@ -1,0 +1,61 @@
+- name: swarm
+  hosts: docker
+  remote_user: vagrant
+  become: true
+  vars:
+    swarm_primary_manager_node: "{{ groups['managers'][0] }}"
+    pip_package: python3-pip
+    pip_install_packages:
+      - name: docker
+  
+  pre_tasks:
+    - name: swarm _pre | apt update
+      apt:        
+        update_cache: yes
+
+  roles:
+    - role: "geerlingguy.pip"
+    - role: "geerlingguy.docker"
+      
+  tasks:
+
+    - name: swarm | init primary manager on {{ swarm_primary_manager_node }}
+      docker_swarm:
+        state: present
+        advertise_addr: "{{ hostvars[inventory_hostname].swarm_init_interface }}"
+      register: swarm_init_info
+      when: inventory_hostname == swarm_primary_manager_node 
+      
+
+    - name: swarm | debug | primary manager initialization info
+      debug:
+        var: hostvars[inventory_hostname].swarm_init_info
+      tags: debug_info
+      when: inventory_hostname == swarm_primary_manager_node
+    
+      #    - debug: var=ansible_all_ipv4_addresses
+      #    - debug: var=hostvars[inventory_hostname]
+      #    - debug: var=hostvars[swarm_primary_manager_node].ansible_enp0s8
+      #    - debug: var=swarm_init_info
+    - set_fact:
+        ansible_interface_1: "ansible_{{ swarm_init_interface }}"
+
+    - debug: var=ansible_interface_1
+
+
+    - set_fact:
+        rem_addr_1: "{{ item }}:2377"
+      with_items: "{{ hostvars[swarm_primary_manager_node][ansible_interface_1].ipv4.address}}"
+
+    - debug: var=rem_addr_1
+
+    - name: swarm | attach worker
+      docker_swarm:
+        state: join
+        join_token: "{{ hostvars[swarm_primary_manager_node].swarm_init_info.swarm_facts.JoinTokens.Worker }}"
+        remote_addrs: [ "{{ rem_addr_1 }}" ]
+        advertise_addr: "{{ ansible_interface_1 }}"
+      
+
+      when: inventory_hostname not in groups['managers']
+      

@@ -1,0 +1,4 @@
+.vagrant
+.vscode
+env
+*.swp
