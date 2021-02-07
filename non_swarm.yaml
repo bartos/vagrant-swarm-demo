@@ -1,0 +1,17 @@
+- name: non_stack_deploy
+  hosts: non_stack_deploy
+  remote_user: vagrant
+  become: yes
+
+  tasks:
+    - set_fact:
+        runner_env: "{{ common_runner_env | to_yaml}}"
+
+    - debug: var=runner_env
+
+    - docker_container:
+        image: "{{ default_image }}"
+        name: "container1"
+        env: "{{ runner_env|to_yaml }}"
+          
+          

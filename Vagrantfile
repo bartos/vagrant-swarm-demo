@@ -11,13 +11,30 @@ Vagrant.configure("2") do |config|
           ansible.limit = "all"
           ansible.groups = {
               "managers" => ["node1"],
-              "workers" => ["node[2:#{N}]"], # 03, 04...
+              "workers" => ["node[2:#{N}]"], # 03, 04...       
+                     
               "docker:children" => ["managers", "workers"],
               "docker:vars" =>{
-                "swarm_init_interface" => "enp0s8"
+                "swarm_init_interface" => "enp0s8",
+              },
+              "non_stacks" => ["node1"],
+              "non_stack_deploy:children" => ["non_stacks"],
+              "non_stack_deploy:vars"=>{
+                "number_of_containers" => 5,                
+                "default_image" => "gitlab/gitlab-runner:alpine",
+                
+                "common_runner_env" => {
+                  "REGISTER_NON_INTERACTIVE":1,
+                  "RUNNER_EXECUTOR" => "shell",
+                  "REGISTRATION_TOKEN" => "jbz5pZcCxB1zzEgmhYhT",
+                  "CI_SERVER_URL" => "https://gitlab.com",
+                  "RUNNER_TAG_LIST" => "shell,alpine",
+                  "RUNNER_NAME" => "swarm runner test1"
+                },
               }
+
           }
-          ansible.playbook = "swarm.yaml"
+          ansible.playbook = "non_swarm.yaml"
         end
       end
     end

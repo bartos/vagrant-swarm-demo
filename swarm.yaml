@@ -59,3 +59,33 @@
 
       when: inventory_hostname not in groups['managers']
       
+
+- name: stack
+  hosts: node1
+  remote_user: vagrant
+  become: true
+  vars:
+    pip_package: python3-pip
+    pip_install_packages:
+      - jsondiff
+      - pyyaml
+
+  roles:
+    - role: "geerlingguy.pip"
+
+  tasks:
+    - name: deploy hello world
+      docker_stack:
+        state: present
+        name: stack_1
+        compose:
+          - version: '3'
+            services: 
+              web: 
+                image: nginx:latest
+                environment:
+                  - "KANAPKA_Z=dzemor"
+                  - "KANAPKA_Y=buleczka"
+
+
+        
